@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Calculadora</title>
+<style>
+  :root { --bg:#0e0f13; --body:#1a1c22; --key:#2a2d36; --keyhi:#343844; --op:#ff8a1f; --opHi:#ffa04a; --fn:#5b6070; --txt:#f4f5f7; --dim:#8a8f9c; }
+  * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html,body { margin:0; height:100%; }
+  body { background:radial-gradient(circle at 30% 0%, #23263a, var(--bg) 60%); color:var(--txt);
+         font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+         display:flex; align-items:center; justify-content:center; padding:16px; }
+  .calc { width:100%; max-width:360px; background:var(--body); border-radius:28px; padding:20px;
+          box-shadow:0 30px 60px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.05); }
+  .screen { padding:18px 8px 22px; text-align:right; min-height:120px; display:flex; flex-direction:column; justify-content:flex-end; }
+  .prev { color:var(--dim); font-size:18px; min-height:24px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .cur { font-size:56px; font-weight:300; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; transition:font-size .1s; }
+  .keys { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; }
+  button { border:0; border-radius:50%; aspect-ratio:1; font-size:26px; color:var(--txt); background:var(--key);
+           cursor:pointer; font-family:inherit; transition:background .12s, transform .06s; }
+  button:hover { background:var(--keyhi); }
+  button:active { transform:scale(.94); }
+  .fn { background:var(--fn); } .fn:hover { background:#6c7182; }
+  .op { background:var(--op); font-size:30px; } .op:hover { background:var(--opHi); }
+  .op.on { background:var(--txt); color:var(--op); }
+  .zero { grid-column:span 2; aspect-ratio:auto; border-radius:999px; text-align:left; padding-left:28px; }
+</style>
+</head>
+<body>
+<div class="calc">
+  <div class="screen"><div class="prev" id="prev"></div><div class="cur" id="cur">0</div></div>
+  <div class="keys">
+    <button class="fn" data-a="clear">AC</button>
+    <button class="fn" data-a="neg">±</button>
+    <button class="fn" data-a="pct">%</button>
+    <button class="op" data-op="/">÷</button>
+    <button data-n="7">7</button><button data-n="8">8</button><button data-n="9">9</button>
+    <button class="op" data-op="*">×</button>
+    <button data-n="4">4</button><button data-n="5">5</button><button data-n="6">6</button>
+    <button class="op" data-op="-">−</button>
+    <button data-n="1">1</button><button data-n="2">2</button><button data-n="3">3</button>
+    <button class="op" data-op="+">+</button>
+    <button class="zero" data-n="0">0</button>
+    <button data-n=".">,</button>
+    <button class="op" data-a="eq">=</button>
+  </div>
+</div>
+<script>
+  // Código secreto: teclear 000 y luego = abre la página de juegos
+  const SECRETO = "000", DESTINO = "https://poki.com/es";
+  const curEl = document.getElementById("cur"), prevEl = document.getElementById("prev");
+  let cur = "0", acc = null, op = null, fresh = false, tecleado = "";
+  const sym = { "/":"÷", "*":"×", "-":"−", "+":"+" };
+
+  const fmt = s => {
+    if (s === "Error") return s;
+    const [i, d] = s.split(".");
+    const ent = Number(i).toLocaleString("es");
+    return (s.startsWith("-") && ent === "0" ? "-" : "") + ent + (d !== undefined ? "," + d : "");
+  };
+  function render() {
+    curEl.textContent = fmt(cur);
+    curEl.style.fontSize = cur.length > 9 ? "36px" : cur.length > 6 ? "46px" : "56px";
+    prevEl.textContent = acc !== null && op ? fmt(String(acc)) + " " + sym[op] : "";
+    document.querySelectorAll("[data-op]").forEach(b => b.classList.toggle("on", b.dataset.op === op && fresh));
+  }
+  function calc(a, b, o) {
+    const r = o === "+" ? a + b : o === "-" ? a - b : o === "*" ? a * b : b === 0 ? NaN : a / b;
+    return isFinite(r) ? String(parseFloat(r.toPrecision(12))) : "Error";
+  }
+  function num(n) {
+    tecleado = (tecleado + n).slice(-SECRETO.length);
+    if (fresh || cur === "Error") { cur = n === "." ? "0." : n; fresh = false; }
+    else if (n === "." ) { if (!cur.includes(".")) cur += "."; }
+    else cur = cur === "0" ? n : cur.length < 15 ? cur + n : cur;
+    render();
+  }
+  function setOp(o) {
+    tecleado = "";
+    if (op && !fresh && acc !== null) cur = calc(acc, parseFloat(cur), op);
+    acc = parseFloat(cur); op = o; fresh = true; render();
+  }
+  function eq() {
+    if (tecleado === SECRETO) { window.location.href = DESTINO; return; }
+    tecleado = "";
+    if (op && acc !== null) { cur = calc(acc, parseFloat(cur), op); acc = null; op = null; fresh = true; }
+    render();
+  }
+  function act(a) {
+    if (a === "eq") return eq();
+    tecleado = "";
+    if (a === "clear") { cur = "0"; acc = null; op = null; fresh = false; }
+    if (a === "neg" && cur !== "0" && cur !== "Error") cur = cur.startsWith("-") ? cur.slice(1) : "-" + cur;
+    if (a === "pct" && cur !== "Error") cur = String(parseFloat(cur) / 100);
+    render();
+  }
+  document.querySelector(".keys").addEventListener("click", e => {
+    const b = e.target.closest("button"); if (!b) return;
+    if (b.dataset.n) num(b.dataset.n); else if (b.dataset.op) setOp(b.dataset.op); else act(b.dataset.a);
+  });
+  document.addEventListener("keydown", e => {
+    const k = e.key;
+    if (/^[0-9]$/.test(k)) num(k);
+    else if (k === "." || k === ",") num(".");
+    else if ("+-*/".includes(k)) setOp(k);
+    else if (k === "Enter" || k === "=") { e.preventDefault(); eq(); }
+    else if (k === "Escape" || k === "Backspace") act("clear");
+    else if (k === "%") act("pct");
+  });
+  render();
+</script>
+</body>
+</html>
