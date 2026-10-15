@@ -47,8 +47,8 @@
   </div>
 </div>
 <script>
-  // Código secreto: teclear 000 y luego = abre la página de juegos
-  const SECRETO = "000", DESTINO = "https://poki.com/es";
+  // Códigos secretos: teclear solo uno de estos números (sin operación) y luego = abre la página de juegos
+  const SECRETOS = ["000", "677"], DESTINO = "https://poki.com/es";
   const curEl = document.getElementById("cur"), prevEl = document.getElementById("prev");
   let cur = "0", acc = null, op = null, fresh = false, tecleado = "";
   const sym = { "/":"÷", "*":"×", "-":"−", "+":"+" };
@@ -70,7 +70,7 @@
     return isFinite(r) ? String(parseFloat(r.toPrecision(12))) : "Error";
   }
   function num(n) {
-    tecleado = (tecleado + n).slice(-SECRETO.length);
+    tecleado += n;
     if (fresh || cur === "Error") { cur = n === "." ? "0." : n; fresh = false; }
     else if (n === "." ) { if (!cur.includes(".")) cur += "."; }
     else cur = cur === "0" ? n : cur.length < 15 ? cur + n : cur;
@@ -82,7 +82,7 @@
     acc = parseFloat(cur); op = o; fresh = true; render();
   }
   function eq() {
-    if (tecleado === SECRETO) { window.location.href = DESTINO; return; }
+    if (op === null && SECRETOS.includes(tecleado)) { window.location.href = DESTINO; return; }
     tecleado = "";
     if (op && acc !== null) { cur = calc(acc, parseFloat(cur), op); acc = null; op = null; fresh = true; }
     render();
